@@ -1,0 +1,60 @@
+REM /**
+REM  * jwt.bbj
+REM  * @author Edgar Sanchez
+REM  * @version 1.0
+REM  *
+REM  */
+
+class public Jwt
+
+  use javax.crypto.spec.SecretKeySpec
+  use javax.xml.bind.DatatypeConverter
+  use java.security.Key
+  use io.jsonwebtoken.SignatureAlgorithm
+  use io.jsonwebtoken.Jwts
+  use io.jsonwebtoken.Claims
+  use java.util.Date    
+  use java.util.HashMap
+
+  field public static BBjString error!
+
+   method public static BBjString sign(HashMap params!)
+   
+   seterr errorhandler
+
+    nowMilliS! = System.currentTimeMillis()
+    now! = new Date(nowMillis!)
+    
+    signatureAlgorithm! = SignatureAlgorithm.HS256
+    apiKeySecretBytes! = DatatypeConverter.parseBase64Binary("secretkey")
+    signingKey! = new SecretKeySpec(apiKeySecretBytes!, signatureAlgorithm!.getJcaName())
+       
+    claims! = Jwts.claims()
+    claims!.putAll(params!)
+
+    builder! = Jwts.builder().setClaims(claims!).setIssuedAt(now!).signWith(signatureAlgorithm!, signingKey!)
+    jwt!= builder!.compact()
+    #error!= null() 
+   methodret jwt!
+   
+   errorhandler:
+   #error! = "Error " + errmes(-1)
+   methodret null()
+
+   methodend
+
+   method public static Claims verify(BBjString token!)
+
+   seterr errorhandler
+   
+    apiKeySecretBytes! = DatatypeConverter.parseBase64Binary("secretkey")
+    claims! = Jwts.parser().setSigningKey(apiKeySecretBytes!).parseClaimsJws(token!).getBody()
+    methodret claims!
+
+    errorhandler:
+    #error! = "Error " + errmes(-1)
+    methodret null()
+
+   methodend
+
+classend

@@ -1,0 +1,56 @@
+class public Login
+
+    method public void service(BBjspServletContext context!)
+	
+        declare BBjspWebRequest request!
+        declare BBjspWebResponse response!
+        declare BBjspSessionData data!
+		
+		use java.util.HashMap
+		use ::jwt.bbj::Jwt
+
+        data! = context!.getBBjspSession()
+        
+        request! = context!.getRequest()
+        response! = context!.getResponse()
+	    response!.setContentType("application/json")
+
+		Rem Default es que no hay data valida
+		e$="{""errors"": { ""global"": ""Informacion Invalida.""} }"
+		status=400
+
+		body!=request!.getBody()
+
+		if body! <> null() then 
+			java.lang.System.out.println("Body: "+body!)
+			jsonO!= new org.json.JSONObject(body!)
+			login$=jsonO!.get("credentials").get("user").toString()
+			java.lang.System.out.println("Login request using "+login$)
+			while 1
+				SQLChan = SQLunt
+				SQLOpen(SQLChan)"NcusDB"
+				SQLPrep(SQLChan)"select email, teller, departamento, sucursal from empleados where login=?"
+				dim empleado$:SQLTMPL(SQLChan)
+				SQLExec(SQLChan,err=*break)login$
+				empleado$=SQLFetch(SQLChan,err=*break)
+				status=200
+				params! = new HashMap()
+				params!.put("email", empleado.email$)
+				params!.put("confirmed","true")
+				java.lang.System.out.println(params!)
+				jwt! = Jwt.sign(params!)
+				e$="{""user"":{""login"":"""+ login$ +""",""email"":"""+ empleado.email$ +""", ""confirmed"":true,""token"":"""+jwt!+""",""teller"":"""+ empleado.teller$ +""",""departamento"":"""+ empleado.departamento$ +""",""sucursal"":"""+ STR(empleado.sucursal) +"""}}"
+				break
+			wend
+			SQLClose(SQLChan)
+		else
+			java.lang.System.err.println("No body found in request. ")
+		endif
+		java.lang.System.out.println("Message returned "+e$)
+        response!.getOutputStream().write(e$)
+        response!.setStatus(status)
+
+	methodend
+    
+classend
+
