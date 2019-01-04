@@ -24,7 +24,7 @@ class public Login
 		if body! <> null() then 
 			java.lang.System.out.println("Body: "+body!)
 			jsonO!= new org.json.JSONObject(body!)
-			login$=jsonO!.get("credentials").get("user").toString()
+			login$=jsonO!.get("credentials").get("user").toString(err=*next)
 			java.lang.System.out.println("Login request using "+login$)
 			while 1
 				SQLChan = SQLunt
@@ -39,7 +39,7 @@ class public Login
 				params!.put("confirmed","true")
 				java.lang.System.out.println(params!)
 				jwt! = Jwt.sign(params!)
-				e$="{""user"":{""login"":"""+ login$ +""",""email"":"""+ empleado.email$ +""", ""confirmed"":true,""token"":"""+jwt!+""",""teller"":"""+ empleado.teller$ +""",""departamento"":"""+ empleado.departamento$ +""",""sucursal"":"""+ STR(empleado.sucursal) +"""}}"
+				e$="{""user"":{""login"":"""+ login$ +""",""email"":"""+ empleado.email$ +""", ""confirmed"":true,""token"":"""+jwt!+"""}}"
 				break
 			wend
 			SQLClose(SQLChan)
