@@ -1,0 +1,186 @@
+class public Viajes
+
+  field public static BBjString cliente!
+  field public static BBjString viaje!
+  field public static BBjString res!
+  field public static BBjNumber status!
+  field public static BBjNumber debug!
+
+    method public void service(BBjspServletContext context!)
+	
+        declare BBjspWebRequest request!
+        declare BBjspWebResponse response!
+        declare BBjspSessionData data!
+		
+		use ::jwt.bbj::Jwt
+		use org.json.JSONObject
+		use org.json.JSONArray
+
+        #debug! = NUM(STBL("debugmode",err=*next),err=*next)
+		#debug!=1
+        request! = context!.getRequest()
+		method! = request!.getMethod()
+		path! = request!.getPathInfo()
+		uri! = request!.getRequestURI()
+		url! = request!.getRequestURL()
+		
+		if #debug! then 
+		
+			java.lang.System.out.println("Metodo: "+method!,err=*next)
+			java.lang.System.out.println("Path: "+path!,err=*next)
+			java.lang.System.out.println("URI: "+uri!,err=*next)
+			java.lang.System.out.println("URL: "+url!,err=*next)
+
+			x!=request!.getHeaderNames()
+			java.lang.System.out.println("Headers")
+			
+			for i=0 to x!.size()-1
+				java.lang.System.out.println(x!.getItem(i))
+				java.lang.System.out.println(request!.getHeader(x!.getItem(i)))
+				java.lang.System.out.println("---------------------------------------------")
+			next i
+			
+		endif
+
+        response! = context!.getResponse()
+	    response!.setContentType("application/json")
+        data! = context!.getBBjspSession()
+
+		rem VALIDATIONS
+		
+		rem Check header exists, if not, exit
+		auth!=""
+		auth! = request!.getHeader("Authorization",err=*next)
+		if #debug! then java.lang.System.out.println("Auth: "+auth$)
+		if auth!="" or auth!=null() then 
+			#res!="{""errors"": { ""global"": ""No Autorizado.""} }"
+			rem 401 - Unauthorized - Action requires user authentication.
+			#status=401
+			goto response
+		endif
+		
+		rem Check header includes valid JWT, if not, exit
+		auth$=auth!
+		jwt$ = auth$(POS(" "=auth$)+1)
+		if #debug! then java.lang.System.out.println("jwt: "+jwt$)
+		claims! = Jwt.verify(jwt$)
+		if #debug! then java.lang.System.out.println(pgm(1)+" Email: "+claims!.get("email",err=*next))
+		rem Se esta usando email pero la realidad es que deberia ser cuenta
+		email$=claims!.get("email",err=*next)
+		if email$="" then 
+			#res!="{""errors"": { ""global"": ""No Autorizado.""} }"
+			rem 403 - Forbidden - Authentication failure or invalid Application ID.
+			#status!=403
+			goto response
+		endif
+
+		rem Check body cliente info, if not, exit
+		body!=request!.getBody()
+		if body!=null() then 
+			if #debug! then java.lang.System.err.println("No body found in request. ")
+			#res!="{""errors"": { ""global"": ""Informacion No Disponible.""} }"
+			rem 400 - Bad request - Malformed syntax or a bad query.
+			#status!=400
+			goto response
+		endif
+
+		if #debug! then java.lang.System.out.println("Body: "+body!)
+
+		jsonO!= new org.json.JSONObject(body!)
+
+		rem Everthing ok let's process transaction
+		Switch method!
+			case "POST"
+				#cliente!=CAST(BBjString,jsonO!.get("cliente").toString())
+				#buscarViajes()
+				break
+			case "PUT"
+				#viaje!=CAST(BBjString,jsonO!.get("viaje").toString())
+				#crearViaje()
+				break
+		case DEFAULT;
+		Swend
+		
+		response:
+		if #debug! then java.lang.System.out.println("Message returned "+#res!+" Code: "+STR(#status!))
+        response!.getOutputStream().write(#res!)
+        response!.setStatus(#status!)
+
+	methodend
+
+	method public static void crearViaje()
+		seterr errorhandler
+
+		if #debug! then java.lang.System.out.println("Crear viaje usando "+#viaje!)
+		jsonViaje!= new org.json.JSONObject(#viaje!)
+
+		#cliente!=CAST(BBjString,jsonViaje!.get("cliente").toString())
+		ciudad!=CAST(BBjString,jsonViaje!.get("ciudad").toString())
+		desde!=CAST(BBjString,jsonViaje!.get("desde").toString())
+		hasta!=CAST(BBjString,jsonViaje!.get("hasta").toString())
+		descripcion!=CAST(BBjString,jsonViaje!.get("descripcion").toString())
+		tarjeta!=CAST(BBjString,jsonViaje!.get("tarjeta").toString())
+
+		sql$="insert into viajes values (viajes_seq.nextval,?,?,?,?,?,?)"
+		SQLChan = SQLunt
+		SQLOpen(SQLChan)"NcusDB"
+		SQLPrep(SQLChan)sql$
+		SQLExec(SQLChan,err=errorhandler)#cliente!,ciudad!,desde!,hasta!,tarjeta!,descripcion!
+		SQLClose(SQLChan)
+		rem The request was processed successfully, but no response body is needed.
+		#res!=" "
+		#status!=204
+		goto fin
+		
+		errorhandler:
+		rem 500 - Internal server error.
+		#res!="{""errors"": { ""global"": ""No se pudo actualizar.""} }"
+		#status!=500
+	
+		fin:
+		methodend
+	
+	method public static void buscarViajes()
+	
+		if #debug! then java.lang.System.out.println("Viajes pedidos usando "+#cliente!)
+
+		jsonRS!=new JSONObject()
+		rsrows!=new JSONArray()
+
+		SQLSel$="select * from VIAJES"
+		rs! = BBjAPI().createSQLRecordSet("NcusDB","",SQLSel$,0)
+
+		if rs!.getRecordCount() then
+
+			meta! = rs!.getJDBCResultSet().getMetaData()
+			cols = meta!.getColumnCount()
+			  
+			rs!.first(err=*next)  
+			rd!=rs!.getCurrentRecordData()
+			fields! = rd!.getFieldList()
+			  
+			while 1
+				rd!=rs!.getCurrentRecordData()
+				rsrow!=new JSONObject()
+
+				for col=0 to cols-1
+					rsrow!.put(fields!.getItem(col),CVS(str(rd!.getFieldValue(fields!.getItem(col))),3))
+				next col
+
+				rsrows!.put(rsrow!)
+				rs!.next(err=*break)
+			wend
+  
+			jsonRS!.put("viajes",rsrows!)
+			#res! = CAST(BBjString,jsonRS!.toString(err=*next))
+			#status!=200
+			
+		else
+			#res!="{""viajes"": [] }"
+			#status!=200
+		fi
+		rs!.close(err=*next)
+	
+	methodend
+	
+classend
