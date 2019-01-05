@@ -74,20 +74,22 @@ class public Viajes
 			goto response
 		endif
 
-		rem Check body cliente info, if not, exit
-		body!=request!.getBody()
-		if body!=null() then 
-			if #debug! then java.lang.System.err.println("No body found in request. ")
-			#res!="{""errors"": { ""global"": ""Informacion No Disponible.""} }"
-			rem 400 - Bad request - Malformed syntax or a bad query.
-			#status!=400
-			goto response
+		rem Check body cliente info, if not, exit unless it's a DELETE
+		if method!<>"DELETE" then
+			body!=request!.getBody()
+			if body!=null() then 
+				if #debug! then java.lang.System.err.println("No body found in request. ")
+				#res!="{""errors"": { ""global"": ""Informacion No Disponible.""} }"
+				rem 400 - Bad request - Malformed syntax or a bad query.
+				#status!=400
+				goto response
+			endif
+
+			if #debug! then java.lang.System.out.println("Body: "+body!)
+
+			jsonO!= new org.json.JSONObject(body!)
 		endif
-
-		if #debug! then java.lang.System.out.println("Body: "+body!)
-
-		jsonO!= new org.json.JSONObject(body!)
-
+		
 		rem Everthing ok let's process transaction
 		Switch method!
 			case "POST"
@@ -97,6 +99,10 @@ class public Viajes
 			case "PUT"
 				#viaje!=CAST(BBjString,jsonO!.get("viaje").toString())
 				#crearViaje()
+				break
+			case "DELETE"
+			rem Jetty seem to ignore a entity body if it is present. We use the uri to include the key
+				#borrarViaje(path!)
 				break
 		case DEFAULT;
 		Swend
@@ -115,7 +121,7 @@ class public Viajes
 		jsonViaje!= new org.json.JSONObject(#viaje!)
 
 		#cliente!=CAST(BBjString,jsonViaje!.get("cliente").toString())
-		ciudad!=CAST(BBjString,jsonViaje!.get("ciudad").toString())
+		pais!=CAST(BBjString,jsonViaje!.get("pais").toString())
 		desde!=CAST(BBjString,jsonViaje!.get("desde").toString())
 		hasta!=CAST(BBjString,jsonViaje!.get("hasta").toString())
 		descripcion!=CAST(BBjString,jsonViaje!.get("descripcion").toString())
@@ -125,7 +131,7 @@ class public Viajes
 		SQLChan = SQLunt
 		SQLOpen(SQLChan)"NcusDB"
 		SQLPrep(SQLChan)sql$
-		SQLExec(SQLChan,err=errorhandler)#cliente!,ciudad!,desde!,hasta!,tarjeta!,descripcion!
+		SQLExec(SQLChan,err=errorhandler)#cliente!,pais!,desde!,hasta!,tarjeta!,descripcion!
 		SQLClose(SQLChan)
 		rem The request was processed successfully, but no response body is needed.
 		#res!=" "
@@ -137,8 +143,8 @@ class public Viajes
 		#res!="{""errors"": { ""global"": ""No se pudo actualizar.""} }"
 		#status!=500
 	
-		fin:
-		methodend
+	fin:
+	methodend
 	
 	method public static void buscarViajes()
 	
@@ -182,5 +188,30 @@ class public Viajes
 		rs!.close(err=*next)
 	
 	methodend
+
+	method public static void borrarViaje(BBjString idviaje!)
+
+		seterr errorhandler
+
+		if #debug! then java.lang.System.out.println("Borrar viaje usando "+idviaje!)
+		
+		sql$="delete from viajes where key=?"
+		SQLChan = SQLunt
+		SQLOpen(SQLChan)"NcusDB"
+		SQLPrep(SQLChan)sql$
+		SQLExec(SQLChan,err=errorhandler)idviaje!.replace("/","")
+		SQLClose(SQLChan)
+		rem The request was processed successfully, but no response body is needed.
+		#res!=" "
+		#status!=204
+		goto fin
+		
+		errorhandler:
+		rem 500 - Internal server error.
+		#res!="{""errors"": { ""global"": ""No se pudo remover.""} }"
+		#status!=500
 	
+	fin:
+	methodend	
+
 classend
