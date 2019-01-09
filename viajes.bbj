@@ -55,7 +55,7 @@ class public Viajes
 		if auth!="" or auth!=null() then 
 			#res!="{""errors"": { ""global"": ""No Autorizado.""} }"
 			rem 401 - Unauthorized - Action requires user authentication.
-			#status=401
+			#status!=401
 			goto response
 		endif
 		
@@ -93,8 +93,13 @@ class public Viajes
 		rem Everthing ok let's process transaction
 		Switch method!
 			case "POST"
-				#cliente!=CAST(BBjString,jsonO!.get("cliente").toString())
-				#buscarViajes()
+				if path!<>null() then
+					#viaje!=CAST(BBjString,jsonO!.get("viaje").toString())
+					#actualizarViaje()
+				else
+					#cliente!=CAST(BBjString,jsonO!.get("cliente").toString())
+					#buscarViajes()
+				endif
 				break
 			case "PUT"
 				#viaje!=CAST(BBjString,jsonO!.get("viaje").toString())
@@ -132,6 +137,37 @@ class public Viajes
 		SQLOpen(SQLChan)"NcusDB"
 		SQLPrep(SQLChan)sql$
 		SQLExec(SQLChan,err=errorhandler)#cliente!,pais!,desde!,hasta!,tarjeta!,descripcion!
+		SQLClose(SQLChan)
+		rem The request was processed successfully, but no response body is needed.
+		#res!=" "
+		#status!=204
+		goto fin
+		
+		errorhandler:
+		rem 500 - Internal server error.
+		#res!="{""errors"": { ""global"": ""No se pudo actualizar.""} }"
+		#status!=500
+	
+	fin:
+	methodend
+
+	method public static void actualizarViaje()
+		seterr errorhandler
+
+		if #debug! then java.lang.System.out.println("Actualizar viaje usando "+#viaje!)
+		jsonViaje!= new org.json.JSONObject(#viaje!)
+
+		idviaje!=CAST(BBjString,jsonViaje!.get("key").toString())
+		pais!=CAST(BBjString,jsonViaje!.get("pais").toString())
+		desde!=CAST(BBjString,jsonViaje!.get("desde").toString())
+		hasta!=CAST(BBjString,jsonViaje!.get("hasta").toString())
+		descripcion!=CAST(BBjString,jsonViaje!.get("descripcion").toString())
+
+		sql$="update viajes set pais='"+pais!+"', desde='"+desde!+"', hasta='"+hasta!+"', descripcion='"+descripcion!+"' where key="+idviaje!
+		SQLChan = SQLunt
+		SQLOpen(SQLChan)"NcusDB"
+		SQLPrep(SQLChan)sql$
+		SQLExec(SQLChan,err=errorhandler)
 		SQLClose(SQLChan)
 		rem The request was processed successfully, but no response body is needed.
 		#res!=" "
