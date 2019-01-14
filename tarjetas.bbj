@@ -1,0 +1,124 @@
+class public Tarjetas
+
+  field public static BBjString cliente!
+  field public static BBjString viaje!
+  field public static BBjString res!
+  field public static BBjNumber status!
+  field public static BBjNumber debug!
+
+    method public void service(BBjspServletContext context!)
+	
+        declare BBjspWebRequest request!
+        declare BBjspWebResponse response!
+        declare BBjspSessionData data!
+		
+		use ::jwt.bbj::Jwt
+		use org.json.JSONObject
+		use org.json.JSONArray
+
+        #debug! = NUM(STBL("debugmode",err=*next),err=*next)
+		#debug!=1
+        request! = context!.getRequest()
+		method! = request!.getMethod()
+		path! = request!.getPathInfo()
+		uri! = request!.getRequestURI()
+		url! = request!.getRequestURL()
+		
+		if #debug! then 
+		
+			java.lang.System.out.println("Metodo: "+method!,err=*next)
+			java.lang.System.out.println("Path: "+path!,err=*next)
+			java.lang.System.out.println("URI: "+uri!,err=*next)
+			java.lang.System.out.println("URL: "+url!,err=*next)
+
+			x!=request!.getHeaderNames()
+			java.lang.System.out.println("Headers")
+			
+			for i=0 to x!.size()-1
+				java.lang.System.out.println(x!.getItem(i))
+				java.lang.System.out.println(request!.getHeader(x!.getItem(i)))
+				java.lang.System.out.println("---------------------------------------------")
+			next i
+			
+		endif
+
+        response! = context!.getResponse()
+	    response!.setContentType("application/json")
+        data! = context!.getBBjspSession()
+
+		rem VALIDATIONS
+		
+		rem Check header exists, if not, exit
+		auth!=""
+		auth! = request!.getHeader("Authorization",err=*next)
+		if #debug! then java.lang.System.out.println("Auth: "+auth$)
+		if auth!="" or auth!=null() then 
+			#res!="{""errors"": { ""global"": ""No Autorizado.""} }"
+			rem 401 - Unauthorized - Action requires user authentication.
+			#status!=401
+			goto response
+		endif
+		
+		rem Check header includes valid JWT, if not, exit
+		auth$=auth!
+		jwt$ = auth$(POS(" "=auth$)+1)
+		if #debug! then java.lang.System.out.println("jwt: "+jwt$)
+		claims! = Jwt.verify(jwt$)
+		if #debug! then java.lang.System.out.println(pgm(1)+" Email: "+claims!.get("email",err=*next))
+		rem Se esta usando email pero la realidad es que deberia ser cuenta
+		email$=claims!.get("email",err=*next)
+		if email$="" then 
+			#res!="{""errors"": { ""global"": ""No Autorizado.""} }"
+			rem 403 - Forbidden - Authentication failure or invalid Application ID.
+			#status!=403
+			goto response
+		endif
+
+		rem Check body cliente info, if not, exit unless it's a DELETE
+		if method!<>"DELETE" then
+			body!=request!.getBody()
+			if body!=null() then 
+				if #debug! then java.lang.System.err.println("No body found in request. ")
+				#res!="{""errors"": { ""global"": ""Informacion No Disponible.""} }"
+				rem 400 - Bad request - Malformed syntax or a bad query.
+				#status!=400
+				goto response
+			endif
+
+			if #debug! then java.lang.System.out.println("Body: "+body!)
+
+			jsonO!= new org.json.JSONObject(body!)
+		endif
+
+		rem Default response
+		#res!=" "
+		rem 405 - Method not allowed.
+		#status!=405
+		
+		rem Everthing ok let's process transaction
+		Switch method!
+			case "POST"
+				#cliente!=CAST(BBjString,jsonO!.get("cliente").toString())
+				#buscarTarjetas()
+				break
+		Swend
+		
+		response:
+		if #debug! then java.lang.System.out.println(#res!)
+		if #debug! then java.lang.System.out.println("Message returned "+#res!+" Code: "+STR(#status!))
+        response!.getOutputStream().write(#res!)
+        response!.setStatus(#status!)
+
+	methodend
+	
+	method public static void buscarTarjetas()
+	
+		if #debug! then java.lang.System.out.println("Viajes pedidos usando "+#cliente!)
+
+		#res! = "{""tarjetas"":[{""label"":""0000 0000 0000 0001"",""value"":""0000 0000 0000 0001""},{""label"":""0000 0000 0000 0002"",""value"":""0000 0000 0000 0002""},{""label"":""Todas"",""value"":""Todas""}]}"
+		#status!=200
+		
+	methodend
+
+
+classend
