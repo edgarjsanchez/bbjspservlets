@@ -57,7 +57,7 @@ class public Prestamos
 			jsonO!= new org.json.JSONObject(body!)
 			cliente$=jsonO!.get("cliente").toString()
 			java.lang.System.out.println("Accounts request using "+cliente$)
-			res$="{""prestamos"":[{ ""descripcion"": ""01. Personal"", ""balance"": ""$2,345.12"", ""pago"": ""$345.12"", ""proxpago"": ""01-01-2018"" },{""descripcion"": ""06. Construccion"", ""balance"": ""$1,890.11"", ""pago"": ""$10.0"", ""proxpago"": ""01-01-2018"" }]}"
+			res$="{""prestamos"":[{ ""descripcion"": ""01. Personal"", ""balance"": ""$1,222,345.12"", ""pago"": ""$345.12"", ""proxpago"": ""01-01-2018"" },{""descripcion"": ""06. Construccion"", ""balance"": ""$1,890.11"", ""pago"": ""$10.0"", ""proxpago"": ""01-01-2018"" }]}"
 			status=200
 		else
 			java.lang.System.err.println("No body found in request. ")

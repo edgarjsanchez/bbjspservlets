@@ -1,0 +1,42 @@
+class public Inscripcion
+
+    method public void service(BBjspServletContext context!)
+	
+        declare BBjspWebRequest request!
+        declare BBjspWebResponse response!
+        declare BBjspSessionData data!
+		
+		use java.util.HashMap
+		use ::jwt.bbj::Jwt
+
+        data! = context!.getBBjspSession()
+        
+        request! = context!.getRequest()
+        response! = context!.getResponse()
+	    response!.setContentType("application/json")
+
+		Rem Default es que no hay data valida
+		e$="{""errors"": { ""global"": ""Informacion Invalida.""} }"
+		status=400
+
+		body!=request!.getBody()
+
+		rem {cuenta: "111111", segsoc: "1111", email: "ed@he.com", password: "1111", password2: "1111"}
+
+		if body! <> null() then 
+			java.lang.System.out.println("Body: "+body!)
+			jsonO!= new org.json.JSONObject(body!)
+			cuenta$=jsonO!.get("credentials").get("cuenta").toString(err=*next)
+			java.lang.System.out.println("Pedido de inscripcion usando cuenta "+cuenta$)
+			status=401
+		else
+			java.lang.System.err.println("No body found in request. ")
+		endif
+		java.lang.System.out.println("Message returned "+e$)
+        response!.getOutputStream().write(e$)
+        response!.setStatus(status)
+
+	methodend
+    
+classend
+
