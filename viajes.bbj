@@ -51,7 +51,7 @@ class public Viajes
 		rem Check header exists, if not, exit
 		auth!=""
 		auth! = request!.getHeader("Authorization",err=*next)
-		if #debug! then java.lang.System.out.println("Auth: "+auth$)
+		if #debug! then java.lang.System.out.println("Auth: "+auth!)
 		if auth!="" or auth!=null() then 
 			#res!="{""errors"": { ""global"": ""No Autorizado.""} }"
 			rem 401 - Unauthorized - Action requires user authentication.
@@ -109,7 +109,6 @@ class public Viajes
 			rem Jetty seem to ignore a entity body if it is present. We use the uri to include the key
 				#borrarViaje(path!)
 				break
-		case DEFAULT;
 		Swend
 		
 		response:
@@ -189,7 +188,7 @@ class public Viajes
 		jsonRS!=new JSONObject()
 		rsrows!=new JSONArray()
 
-		SQLSel$="select * from VIAJES"
+		SQLSel$="select * from VIAJES where email='"+#cliente!+"'"
 		rs! = BBjAPI().createSQLRecordSet("NcusDB","",SQLSel$,0)
 
 		if rs!.getRecordCount() then

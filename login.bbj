@@ -24,22 +24,22 @@ class public Login
 		if body! <> null() then 
 			java.lang.System.out.println("Body: "+body!)
 			jsonO!= new org.json.JSONObject(body!)
-			login$=jsonO!.get("credentials").get("user").toString(err=*next)
-			java.lang.System.out.println("Login request using "+login$)
+			user$=jsonO!.get("credentials").get("user").toString(err=*next)
+			java.lang.System.out.println("Login request using "+user$)
 			while 1
 				SQLChan = SQLunt
 				SQLOpen(SQLChan)"NcusDB"
-				SQLPrep(SQLChan)"select email, teller, departamento, sucursal from empleados where login=?"
-				dim empleado$:SQLTMPL(SQLChan)
-				SQLExec(SQLChan,err=*break)login$
-				empleado$=SQLFetch(SQLChan,err=*break)
+				SQLPrep(SQLChan)"select email, confirmado from login where email=? and confirmado=1"
+				dim login$:SQLTMPL(SQLChan)
+				SQLExec(SQLChan,err=*break)user$
+				login$=SQLFetch(SQLChan,err=*break)
 				status=200
 				params! = new HashMap()
-				params!.put("email", empleado.email$)
+				params!.put("email", CVS(login.email$,3))
 				params!.put("confirmed","true")
 				java.lang.System.out.println(params!)
 				jwt! = Jwt.sign(params!)
-				e$="{""user"":{""login"":"""+ login$ +""",""email"":"""+ empleado.email$ +""", ""confirmed"":true,""token"":"""+jwt!+"""}}"
+				e$="{""user"":{""email"":"""+ CVS(login.email$,3) +""", ""confirmed"":true,""token"":"""+jwt!+"""}}"
 				break
 			wend
 			SQLClose(SQLChan)
