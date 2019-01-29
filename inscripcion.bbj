@@ -1,19 +1,16 @@
 class public Inscripcion
 
-    method public void service(BBjspServletContext context!)
+	method public void service(BBjspServletContext context!)
 	
-        declare BBjspWebRequest request!
-        declare BBjspWebResponse response!
-        declare BBjspSessionData data!
+		declare BBjspWebRequest request!
+		declare BBjspWebResponse response!
 		
 		use java.util.HashMap
 		use ::jwt.bbj::Jwt
 
-        data! = context!.getBBjspSession()
-        
-        request! = context!.getRequest()
-        response! = context!.getResponse()
-	    response!.setContentType("application/json")
+		request! = context!.getRequest()
+		response! = context!.getResponse()
+		response!.setContentType("application/json")
 
 		Rem Default es que no hay data valida
 		e$="{""errors"": { ""global"": ""Informacion Invalida. \nContacte a su cooperativa.""} }"
@@ -28,10 +25,10 @@ class public Inscripcion
 			email$=jsonO!.get("credentials").get("email").toString(err=*next)
 			segsoc$=jsonO!.get("credentials").get("segsoc").toString(err=*next)
 			password$=jsonO!.get("credentials").get("password").toString(err=*next)
-			if !#existeCuenta(cuenta$) and email$<>"" and email$<>"" and password$<>"" then
+			if #cuentaValida(cuenta$) and !#existeLogin(email$) and password$<>"" then
 				java.lang.System.out.println("Pedido de inscripcion usando cuenta "+cuenta$)
 				while 1
-				    params! = new HashMap()
+					params! = new HashMap()
 					params!.put("email", email$)
 					params!.put("confirmado","")
 					java.lang.System.out.println(params!)
@@ -57,26 +54,47 @@ class public Inscripcion
 		endif
 		salida:
 		java.lang.System.out.println("Message returned: "+e$)
-        response!.getOutputStream().write(e$)
-        response!.setStatus(status)
+		response!.getOutputStream().write(e$)
+		response!.setStatus(status)
 
 	methodend
 
-    method public static Boolean existeCuenta(BBjString cuenta!)
+	method public static Boolean cuentaValida(BBjString cuenta!)
 
-		sql$="select uid from login where cuenta='"+cuenta!+"'"
+		REM En esta seccion hay que validar que para la cuenta enviada exista una entrada en SOCIOS.
+		REM En adicion se podria validar si existe el mismo email en las tablas de NCUS.
+		REM Por el momento devolvemos TRUE.
+		methodret Boolean.TRUE
+		
+		REM Aqui empieza codigo
+		sql$="select * from SOCIOS where cuenta='"+cuenta!+"'"
 		rs! = BBJAPI().createSQLRecordSet("NcusDB",modes$,sql$,BBjAPI.FALSE)
 		existe=rs!.getRecordCount()
 		rs!.close()
 
 		if existe then 
-			java.lang.System.out.println("Cuenta ya fue registrada:"+cuenta!)
+			java.lang.System.out.println("No existe numero de cuenta: "+cuenta!)
 			methodret Boolean.TRUE
 		else
 			methodret Boolean.FALSE
 		endif
 	methodend
- 
+
+	method public static Boolean existeLogin(BBjString email!)
+
+		sql$="select uid from login where email='"+email!+"'"
+		rs! = BBJAPI().createSQLRecordSet("NcusDB",modes$,sql$,BBjAPI.FALSE)
+		existe=rs!.getRecordCount()
+		rs!.close()
+
+		if existe then 
+			java.lang.System.out.println("Email ya fue registrado:"+email!)
+			methodret Boolean.TRUE
+		else
+			methodret Boolean.FALSE
+		endif
+	methodend
+	
 	method public static Boolean enviarEmail(BBjString email!, BBjString jwt!)
 
 		use java.net.URLEncoder
@@ -121,8 +139,7 @@ REM CREATE SEQUENCE login_uid INCREMENT BY 1 START WITH 100
 REM create table LOGIN
 REM (
 REM uid int not null primary key unique,
-REM CUENTA char(9),
-REM EMAIL char(3),
+REM EMAIL char(64),
 REM PASSWORD char(128),
 REM TOKEN char(256),
 REM CONFIRMADO int,
