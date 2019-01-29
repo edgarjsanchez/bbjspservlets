@@ -1,22 +1,20 @@
 class public Confirmacion
 
-    method public void service(BBjspServletContext context!)
+	method public void service(BBjspServletContext context!)
 	
-        declare BBjspWebRequest request!
-        declare BBjspWebResponse response!
-        declare BBjspSessionData data!
+		declare BBjspWebRequest request!
+		declare BBjspWebResponse response!
 		
 		use java.util.HashMap
 		use ::jwt.bbj::Jwt
 
-        data! = context!.getBBjspSession()
-        
-        request! = context!.getRequest()
-        response! = context!.getResponse()
+		request! = context!.getRequest()
+		response! = context!.getResponse()
 		path! = request!.getPathInfo()
 
-		res$="<html><h2>Hubo problemas en su Confirmacion. Contacte a su cooperativa.</h2></html>"
-		status=401
+		Rem Default es que no hay data valida
+		res$="<html><h2>No se pudo confirmar su informacion. Contacte a su cooperativa.</h2></html>"
+		status=400
 
 		token! = path!.replace("/","")
 		java.lang.System.out.println("Confirmacion token recibido: "+token!)
@@ -30,7 +28,7 @@ class public Confirmacion
 		endif
 		java.lang.System.out.println(pgm(1)+" Email: "+email$)
 
-		sql$="select uid from login where email='"+email$+"' and token='"+token!+"'"
+		sql$="select uid from login where email='"+email$+"' and token='"+token!+"' and confirmado=0"
 		rs! = BBJAPI().createSQLRecordSet("NcusDB",modes$,sql$,BBjAPI.FALSE)
 		existe=rs!.getRecordCount()
 		rs!.close()
@@ -51,9 +49,9 @@ class public Confirmacion
 		response:
 
 		java.lang.System.out.println("Message returned: "+res$)
-        response!.getOutputStream().write(res$)
-        response!.setStatus(status)
+		response!.getOutputStream().write(res$)
+		response!.setStatus(status)
 
 	methodend
-    
+
 classend
