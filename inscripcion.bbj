@@ -5,9 +5,10 @@ class public Inscripcion
 		declare BBjspWebRequest request!
 		declare BBjspWebResponse response!
 		
-		use java.util.HashMap
-		use ::jwt.bbj::Jwt
-
+		use ::utils.bbj::Login
+		use ::utils.bbj::Socio
+		use ::emailutil.bbj::Email
+		
 		request! = context!.getRequest()
 		response! = context!.getResponse()
 		response!.setContentType("application/json")
@@ -17,119 +18,53 @@ class public Inscripcion
 		status=400
 
 		body!=request!.getBody()
-
-		if body! <> null() then 
-			java.lang.System.out.println("Body: "+body!)
-			jsonO!= new org.json.JSONObject(body!)
-			cuenta$=jsonO!.get("credentials").get("cuenta").toString(err=*next)
-			email$=jsonO!.get("credentials").get("email").toString(err=*next)
-			segsoc$=jsonO!.get("credentials").get("segsoc").toString(err=*next)
-			password$=jsonO!.get("credentials").get("password").toString(err=*next)
-			if #cuentaValida(cuenta$) and !#existeLogin(email$) and password$<>"" then
-				java.lang.System.out.println("Pedido de inscripcion usando cuenta "+cuenta$)
-				while 1
-					params! = new HashMap()
-					params!.put("email", email$)
-					params!.put("confirmado","")
-					java.lang.System.out.println(params!)
-					jwt! = Jwt.sign(params!)
-					sql$="insert into login (uid, cuenta, email, password, token) values (login_uid.nextval, '"+cuenta$+"','"+email$+"','"+password$+"','"+jwt!+"')"
-					java.lang.System.out.println(sql$)
-					SQLChan = SQLunt
-					SQLOpen(SQLChan)"NcusDB"
-					SQLPrep(SQLChan)sql$
-					SQLExec(SQLChan,err=*break)
-					if #enviarEmail(email$, jwt!) then 
-						status=200
-					else 
-						java.lang.System.out.println("Envio de email fallo. Se considera que la transaccion no es valida para cuenta: "+cuenta$)
-						rem Aqui poner logica para manejar este caso
-					endif
-					break
-				wend
-				SQLClose(SQLChan)			
-			endif
-		else
+		
+		if body! = null() then 
 			java.lang.System.err.println("No body found in request. ")
+			response!.getOutputStream().write("{""errors"": { ""global"": ""Informacion Invalida.""} }")
+			response!.setStatus(400)
 		endif
-		salida:
-		java.lang.System.out.println("Message returned: "+e$)
+
+		java.lang.System.out.println("Body: "+body!)
+		jsonO!= new org.json.JSONObject(body!)
+		cuenta!=jsonO!.get("credentials").get("cuenta").toString(err=*next)
+		email!=jsonO!.get("credentials").get("email").toString(err=*next)
+		segsoc!=jsonO!.get("credentials").get("segsoc").toString(err=*next)
+		password!=jsonO!.get("credentials").get("password").toString(err=*next)
+
+		java.lang.System.out.println("Pedido de inscripcion usando cuenta "+cuenta!)
+
+		login! = new Login(email!)
+		if login!.existe() then
+			response!.getOutputStream().write("{""errors"": { ""global"": ""Email Invalido.""} }")
+			response!.setStatus(400)
+			java.lang.System.out.println("Message returned: Email invalido")
+			goto salida
+		endif
+		
+		socio! = new Socio(cuenta!)
+		if !socio!.existe() then 
+			response!.getOutputStream().write("{""errors"": { ""global"": ""Numero de Cuenta Invalido.""} }")
+			response!.setStatus(400)
+			java.lang.System.out.println("Message returned: Numero cuenta invalido")
+			goto salida
+		endif
+
+		REM Crear entrada en tabla Login
+		if login!.crear(cuenta!, email!, password!) then
+			if Email.enviarEmailInscripcion(login!.getemail(), login!.gettoken()) then 
+				response!.setStatus(200)
+				goto salida
+			else 
+				java.lang.System.out.println("Envio de email fallo. Se considera que la transaccion no es valida para cuenta: "+cuenta$)
+				rem Aqui poner logica para manejar este caso
+			endif
+		endif
+		
 		response!.getOutputStream().write(e$)
 		response!.setStatus(status)
-
-	methodend
-
-	method public static Boolean cuentaValida(BBjString cuenta!)
-
-		REM En esta seccion hay que validar que para la cuenta enviada exista una entrada en SOCIOS.
-		REM En adicion se podria validar si existe el mismo email en las tablas de NCUS.
-		REM Por el momento devolvemos TRUE.
-		methodret Boolean.TRUE
 		
-		REM Aqui empieza codigo
-		sql$="select * from SOCIOS where cuenta='"+cuenta!+"'"
-		rs! = BBJAPI().createSQLRecordSet("NcusDB",modes$,sql$,BBjAPI.FALSE)
-		existe=rs!.getRecordCount()
-		rs!.close()
-
-		if existe then 
-			java.lang.System.out.println("No existe numero de cuenta: "+cuenta!)
-			methodret Boolean.TRUE
-		else
-			methodret Boolean.FALSE
-		endif
-	methodend
-
-	method public static Boolean existeLogin(BBjString email!)
-
-		sql$="select uid from login where email='"+email!+"'"
-		rs! = BBJAPI().createSQLRecordSet("NcusDB",modes$,sql$,BBjAPI.FALSE)
-		existe=rs!.getRecordCount()
-		rs!.close()
-
-		if existe then 
-			java.lang.System.out.println("Email ya fue registrado:"+email!)
-			methodret Boolean.TRUE
-		else
-			methodret Boolean.FALSE
-		endif
-	methodend
-	
-	method public static Boolean enviarEmail(BBjString email!, BBjString jwt!)
-
-		use java.net.URLEncoder
-		use ::email.bbj::Email
-		server$ = ::BBUtils.bbj::BBUtils.getWebServerURL()
-
-		mailhost$   =   "smtp.mailtrap.io"
-		mailport    =   465
-		username$   =   "008a60403c8877"
-		password$   =   "d57b5dd6d85510"
-		smtp$       =   "smtp"
-
-		html$=html$+"<html><body>"
-		html$=html$+"<p>Hemos recibido su pedido de acceso al servicio Anti Fraudes de su cooperativa.</p>"
-		html$=html$+"<p>Para confirmar haga click en el link que sigue:</p>"
-		html$=html$+"<a href='"+server$+"confirmacion/"+URLEncoder.encode(jwt!)+"'>Confirmar</a>"
-		html$=html$+"<p> </p>"
-		html$=html$+"<p>Si usted no ha realizado este pedido ignore el link y contacte a su cooperativa.</p>"
-		html$=html$+"</body></html>"
-
-		mail! = new Email(mailhost$,mailport,username$,password$,smtp$)
-
-		mail!.setSubject("Pedido De Inscripcion Al Servicio.")
-		mail!.setFrom("AntiFraudes")
-		mail!.setTo(email!)
-		mail!.addData(html$,"text/html")
-		mail!.setHeader("X-Mailer","BBj")
-
-		mail!.send(err=Problema_email)
-		envio=1
-		methodret Boolean.TRUE
-
-		Problema_email:
-		methodret Boolean.FALSE
-
+	salida:
 	methodend
 
 classend

@@ -1,56 +1,51 @@
 class public Login
 
-    method public void service(BBjspServletContext context!)
+	method public void service(BBjspServletContext context!)
 	
-        declare BBjspWebRequest request!
-        declare BBjspWebResponse response!
-        declare BBjspSessionData data!
-		
-		use java.util.HashMap
-		use ::jwt.bbj::Jwt
+		use ::utils.bbj::Login
 
-        data! = context!.getBBjspSession()
-        
-        request! = context!.getRequest()
-        response! = context!.getResponse()
-	    response!.setContentType("application/json")
+		declare BBjspWebRequest request!
+		declare BBjspWebResponse response!
+		declare Login login!
 
-		Rem Default es que no hay data valida
-		e$="{""errors"": { ""global"": ""Informacion Invalida.""} }"
-		status=400
+		request! = context!.getRequest()
+		response! = context!.getResponse()
+		response!.setContentType("application/json")
 
 		body!=request!.getBody()
-
-		if body! <> null() then 
-			java.lang.System.out.println("Body: "+body!)
-			jsonO!= new org.json.JSONObject(body!)
-			user$=jsonO!.get("credentials").get("user").toString(err=*next)
-			java.lang.System.out.println("Login request using "+user$)
-			while 1
-				SQLChan = SQLunt
-				SQLOpen(SQLChan)"NcusDB"
-				SQLPrep(SQLChan)"select email, confirmado from login where email=? and confirmado=1"
-				dim login$:SQLTMPL(SQLChan)
-				SQLExec(SQLChan,err=*break)user$
-				login$=SQLFetch(SQLChan,err=*break)
-				status=200
-				params! = new HashMap()
-				params!.put("email", CVS(login.email$,3))
-				params!.put("confirmed","true")
-				java.lang.System.out.println(params!)
-				jwt! = Jwt.sign(params!)
-				e$="{""user"":{""email"":"""+ CVS(login.email$,3) +""", ""confirmed"":true,""token"":"""+jwt!+"""}}"
-				break
-			wend
-			SQLClose(SQLChan)
-		else
+		
+		if body! = null() then 
 			java.lang.System.err.println("No body found in request. ")
+			response!.getOutputStream().write("{""errors"": { ""global"": ""Informacion Invalida.""} }")
+			response!.setStatus(400)
 		endif
+
+		java.lang.System.out.println("Body: "+body!)
+		jsonO!= new org.json.JSONObject(body!)
+		user!=jsonO!.get("credentials").get("user").toString(err=*next)
+		java.lang.System.out.println("Login request using "+user!)
+
+		login! = new Login(user!)
+		
+		if login!.existe() and login!.getconfirmado() then
+			status=200
+			e$="{""user"":{""email"":"""+ user! +""", ""confirmed"":""true"",""token"":"""+login!.gettoken()+"""}}"
+		else
+			status=400
+			e$="{""errors"": { ""global"": ""No se encontro usuario en el sistema.""} }"
+		endif
+		
 		java.lang.System.out.println("Message returned "+e$)
-        response!.getOutputStream().write(e$)
-        response!.setStatus(status)
+		response!.getOutputStream().write(e$)
+		response!.setStatus(status)
 
 	methodend
-    
+	
 classend
+
+			params! = new HashMap()
+			params!.put("email", user!)
+			params!.put("confirmed","true")
+			java.lang.System.out.println(params!)
+			jwt! = Jwt.sign(params!)
 

@@ -7,6 +7,7 @@ class public Confirmacion
 		
 		use java.util.HashMap
 		use ::jwt.bbj::Jwt
+		use ::utils.bbj::Login
 
 		request! = context!.getRequest()
 		response! = context!.getResponse()
@@ -22,36 +23,33 @@ class public Confirmacion
 		REM Verificar token para sacar detalles del cliente
 		claims! = Jwt.verify(token!)
 		email$=claims!.get("email",err=*next)
-		if email$="" then 
-			java.lang.System.out.println(pgm(1)+"NO Email in token")
-			goto response
-		endif
 		java.lang.System.out.println(pgm(1)+" Email: "+email$)
 
-		sql$="select uid from login where email='"+email$+"' and token='"+token!+"' and confirmado=0"
-		rs! = BBJAPI().createSQLRecordSet("NcusDB",modes$,sql$,BBjAPI.FALSE)
-		existe=rs!.getRecordCount()
-		rs!.close()
-		if !existe then goto response
-		
-		while 1
-			sql$="update login set confirmado=1 where email=? and token=?"
-			SQLChan = SQLunt
-			SQLOpen(SQLChan)"NcusDB"
-			SQLPrep(SQLChan)sql$
-			SQLExec(SQLChan,err=*break)email$, token!
-			SQLClose(SQLChan)
+		if email$="" then 
+			java.lang.System.out.println(pgm(1)+"No se encontro Email.")
+			response!.getOutputStream().write(res$)
+			response!.setStatus(status)
+			goto salida
+		endif
+
+		login! = new Login(email$)
+
+		if !login!.existe() then 
+			java.lang.System.out.println(pgm(1)+"No se encontro Login.")
+			response!.getOutputStream().write(res$)
+			response!.setStatus(status)
+			goto salida
+		endif
+
+		if login!.confirmar() then		
 			status = 200
 			res$="<html><h2>Confirmacion Exitosa. Intente hacer login en su app.</h2></html>"
-			break
-		wend
-		
-		response:
+		endif
 
-		java.lang.System.out.println("Message returned: "+res$)
 		response!.getOutputStream().write(res$)
 		response!.setStatus(status)
 
+	salida:
 	methodend
 
 classend
