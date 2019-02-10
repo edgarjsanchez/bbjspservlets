@@ -10,6 +10,7 @@ class public Login
 	field public BBjString email!
 	field public BBjString token!
 	field public BBjInt confirmado!
+	field public BBjInt uid!
 
 	use ::jwt.bbj::Jwt
 
@@ -18,13 +19,14 @@ class public Login
 		while 1
 			SQLChan = SQLunt
 			SQLOpen(SQLChan)"NcusDB"
-			SQLPrep(SQLChan)"select cuenta, token, confirmado from login where email=?"
+			SQLPrep(SQLChan)"select uid, cuenta, token, confirmado from login where email=?"
 			SQLExec(SQLChan,err=*break)email!
 			dim login$:SQLTMPL(SQLChan)
 			login$=SQLFetch(SQLChan,err=*break)
 			#cuenta!=login.cuenta$
 			#token!=login.token$
 			#confirmado!=login.confirmado
+			#uid!=login.uid
 			break
 		wend
 	methodend
@@ -46,7 +48,7 @@ class public Login
 		params! = new java.util.HashMap()
 		params!.put("email", email!)
 		params!.put("confirmado","")
-		jwt! = Jwt.sign(params!)
+		jwt! = Jwt.sign(params!,0)
 		while 1
 			sql$="insert into login (uid, cuenta, email, password, token) values (login_uid.nextval, '"+cuenta!+"','"+email!+"','"+password!+"','"+jwt!+"')"
 			java.lang.System.out.println(sql$)
@@ -66,8 +68,13 @@ class public Login
 	methodend
 	
 	method public Boolean confirmar()
+	
+		params! = new java.util.HashMap()
+		params!.put("email", #email!)
+		params!.put("confirmado","true")
+		jwt! = Jwt.sign(params!,0)
 		while 1
-			sql$="update login set confirmado=1 where email=?"
+			sql$="update login set confirmado=1, token='"+jwt!+"' where email=?"
 			SQLChan = SQLunt
 			SQLOpen(SQLChan)"NcusDB"
 			SQLPrep(SQLChan)sql$
@@ -79,7 +86,22 @@ class public Login
 		SQLClose(SQLChan)
 		methodret Boolean.FALSE
 	methodend
-	
+
+	method public Boolean cambiopassword(BBjString password!)
+		while 1
+			sql$="update login set password='"+password!+"' where email=?"
+			SQLChan = SQLunt
+			SQLOpen(SQLChan)"NcusDB"
+			SQLPrep(SQLChan)sql$
+			SQLExec(SQLChan,err=*break)#email!
+			SQLClose(SQLChan)
+			methodret Boolean.TRUE
+			break
+		wend
+		SQLClose(SQLChan)
+		methodret Boolean.FALSE
+	methodend
+
 	method public Boolean passwordValido(BBjString password!)
 		methodret Boolean.FALSE
 	methodend
@@ -123,10 +145,3 @@ class public Socio
 	methodend
 
 classend
-
-Socio! = new Socio("1")
-print Socio!.existe()
-escape
-Login! = new Login("paco@pollo.com")
-print Login!.existe()
-escape

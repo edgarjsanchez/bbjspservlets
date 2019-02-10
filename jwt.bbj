@@ -7,54 +7,71 @@ REM  */
 
 class public Jwt
 
-  use javax.crypto.spec.SecretKeySpec
-  use javax.xml.bind.DatatypeConverter
-  use java.security.Key
-  use io.jsonwebtoken.SignatureAlgorithm
-  use io.jsonwebtoken.Jwts
-  use io.jsonwebtoken.Claims
-  use java.util.Date    
-  use java.util.HashMap
+	use javax.crypto.spec.SecretKeySpec
+	use javax.xml.bind.DatatypeConverter
+	use java.security.Key
+	use io.jsonwebtoken.SignatureAlgorithm
+	use io.jsonwebtoken.Jwts
+	use io.jsonwebtoken.Claims
+	use java.util.Date
+	use java.util.HashMap
 
-  field public static BBjString error!
+	field public static BBjString error!
 
-   method public static BBjString sign(HashMap params!)
-   
-   seterr errorhandler
+	method public static BBjString sign(HashMap params!, BBjInt ttlMillis!)
 
-    nowMilliS! = System.currentTimeMillis()
-    now! = new Date(nowMillis!)
-    
-    signatureAlgorithm! = SignatureAlgorithm.HS256
-    apiKeySecretBytes! = DatatypeConverter.parseBase64Binary("secretkey")
-    signingKey! = new SecretKeySpec(apiKeySecretBytes!, signatureAlgorithm!.getJcaName())
-       
-    claims! = Jwts.claims()
-    claims!.putAll(params!)
+		seterr errorhandler
 
-    builder! = Jwts.builder().setClaims(claims!).setIssuedAt(now!).signWith(signatureAlgorithm!, signingKey!)
-    jwt!= builder!.compact()
-    #error!= null() 
-   methodret jwt!
-   
-   errorhandler:
-   #error! = "Error " + errmes(-1)
-   methodret null()
+		signatureAlgorithm! = SignatureAlgorithm.HS256
+		apiKeySecretBytes! = DatatypeConverter.parseBase64Binary("secretkey")
+		signingKey! = new SecretKeySpec(apiKeySecretBytes!, signatureAlgorithm!.getJcaName())
 
-   methodend
+		claims! = Jwts.claims()
+		claims!.putAll(params!)
 
-   method public static Claims verify(BBjString token!)
+		builder! = Jwts.builder().setClaims(claims!).setIssuedAt(now!).signWith(signatureAlgorithm!, signingKey!)
 
-   seterr errorhandler
-   
-    apiKeySecretBytes! = DatatypeConverter.parseBase64Binary("secretkey")
-    claims! = Jwts.parser().setSigningKey(apiKeySecretBytes!).parseClaimsJws(token!).getBody()
-    methodret claims!
+		ttlMillis! = CAST(long, ttlMillis!) 
+		if ttlMillis! then 
+			expMillis! = System.currentTimeMillis() + ttlMillis!
+			exp! = new Date(expMillis!)
+			builder!.setExpiration(exp!)
+		endif
 
-    errorhandler:
-    #error! = "Error " + errmes(-1)
-    methodret null()
+		jwt!= builder!.compact()
+		#error!= null() 
+		methodret jwt!
 
-   methodend
+		errorhandler:
+		#error! = "Error " + errmes(-1)
+		methodret null()
+
+	methodend
+
+	method public static Claims verify(BBjString token!)
+
+		seterr errorhandler
+
+		apiKeySecretBytes! = DatatypeConverter.parseBase64Binary("secretkey")
+		claims! = Jwts.parser().setSigningKey(apiKeySecretBytes!).parseClaimsJws(token!).getBody()
+		methodret claims!
+
+		errorhandler:
+		#error! = "Error " + errmes(-1)
+		methodret null()
+
+	methodend
 
 classend
+
+		params! = new java.util.HashMap()
+		params!.put("email", "edgar@me.com")
+		params!.put("confirmado","true")
+		ESCAPE
+		rem Exp en una hora
+		jwt! = Jwt.sign(params!,360000)
+		ESCAPE
+		c! = Jwt.verify(jwt!)
+		ESCAPE
+		c! = Jwt.verify(jwt!)
+		

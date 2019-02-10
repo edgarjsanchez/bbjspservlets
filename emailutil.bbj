@@ -37,4 +37,41 @@ class public Email
 
 	methodend
 
+	method public static Boolean enviarEmailResetPassword(BBjString email!, BBjString jwt!)
+
+		use java.net.URLEncoder
+		use ::email.bbj::Email
+		server$ = ::BBUtils.bbj::BBUtils.getWebServerURL()
+
+		mailhost$   =   "smtp.mailtrap.io"
+		mailport    =   465
+		username$   =   "008a60403c8877"
+		password$   =   "d57b5dd6d85510"
+		smtp$       =   "smtp"
+
+		html$=html$+"<html><body>"
+		html$=html$+"<p>Hemos recibido su pedido de reset de password al servicio Anti Fraudes de su cooperativa.</p>"
+		html$=html$+"<p>Para hacer reset haga click en el link que sigue:</p>"
+		html$=html$+"<a href='"+server$+"reset_password/"+URLEncoder.encode(jwt!)+"'>Continuar</a>"
+		html$=html$+"<p> </p>"
+		html$=html$+"<p>Si usted no ha realizado este pedido ignore el link y contacte a su cooperativa.</p>"
+		html$=html$+"</body></html>"
+
+		mail! = new Email(mailhost$,mailport,username$,password$,smtp$)
+
+		mail!.setSubject("Pedido De Reset De Password.")
+		mail!.setFrom("AntiFraudes")
+		mail!.setTo(email!)
+		mail!.addData(html$,"text/html")
+		mail!.setHeader("X-Mailer","BBj")
+
+		mail!.send(err=Problema_email)
+		envio=1
+		methodret Boolean.TRUE
+
+		Problema_email:
+		methodret Boolean.FALSE
+
+	methodend
+
 classend

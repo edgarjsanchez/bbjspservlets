@@ -42,10 +42,3 @@ class public Login
 	methodend
 	
 classend
-
-			params! = new HashMap()
-			params!.put("email", user!)
-			params!.put("confirmed","true")
-			java.lang.System.out.println(params!)
-			jwt! = Jwt.sign(params!)
-

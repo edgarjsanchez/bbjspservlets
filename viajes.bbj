@@ -16,8 +16,9 @@ class public Viajes
 		use org.json.JSONObject
 		use org.json.JSONArray
 
+		#debug! = 0
         #debug! = NUM(STBL("debugmode",err=*next),err=*next)
-		#debug!=1
+
         request! = context!.getRequest()
 		method! = request!.getMethod()
 		path! = request!.getPathInfo()
@@ -65,7 +66,6 @@ class public Viajes
 		if #debug! then java.lang.System.out.println("jwt: "+jwt$)
 		claims! = Jwt.verify(jwt$)
 		if #debug! then java.lang.System.out.println(pgm(1)+" Email: "+claims!.get("email",err=*next))
-		rem Se esta usando email pero la realidad es que deberia ser cuenta
 		email$=claims!.get("email",err=*next)
 		if email$="" then 
 			#res!="{""errors"": { ""global"": ""No Autorizado.""} }"

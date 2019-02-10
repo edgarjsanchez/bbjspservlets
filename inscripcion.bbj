@@ -4,11 +4,11 @@ class public Inscripcion
 	
 		declare BBjspWebRequest request!
 		declare BBjspWebResponse response!
-		
+
 		use ::utils.bbj::Login
 		use ::utils.bbj::Socio
 		use ::emailutil.bbj::Email
-		
+
 		request! = context!.getRequest()
 		response! = context!.getResponse()
 		response!.setContentType("application/json")
@@ -18,7 +18,7 @@ class public Inscripcion
 		status=400
 
 		body!=request!.getBody()
-		
+
 		if body! = null() then 
 			java.lang.System.err.println("No body found in request. ")
 			response!.getOutputStream().write("{""errors"": { ""global"": ""Informacion Invalida.""} }")
@@ -41,7 +41,7 @@ class public Inscripcion
 			java.lang.System.out.println("Message returned: Email invalido")
 			goto salida
 		endif
-		
+
 		socio! = new Socio(cuenta!)
 		if !socio!.existe() then 
 			response!.getOutputStream().write("{""errors"": { ""global"": ""Numero de Cuenta Invalido.""} }")
@@ -60,10 +60,10 @@ class public Inscripcion
 				rem Aqui poner logica para manejar este caso
 			endif
 		endif
-		
+
 		response!.getOutputStream().write(e$)
 		response!.setStatus(status)
-		
+
 	salida:
 	methodend
 
