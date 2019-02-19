@@ -23,13 +23,19 @@ class public Login
 		java.lang.System.out.println("Body: "+body!)
 		jsonO!= new org.json.JSONObject(body!)
 		user!=jsonO!.get("credentials").get("user").toString(err=*next)
+		pwd!=jsonO!.get("credentials").get("password").toString(err=*next)
 		java.lang.System.out.println("Login request using "+user!)
 
 		login! = new Login(user!)
 		
 		if login!.existe() and login!.getconfirmado() then
-			status=200
-			e$="{""user"":{""email"":"""+ user! +""", ""confirmed"":""true"",""token"":"""+login!.gettoken()+"""}}"
+			if login!.passwordValido(pwd!) then
+				status=200
+				e$="{""user"":{""email"":"""+ user! +""", ""confirmed"":""true"",""token"":"""+login!.gettoken()+"""}}"
+			else
+				status=400
+				e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
+			endif
 		else
 			status=400
 			e$="{""errors"": { ""global"": ""No se encontro usuario en el sistema.""} }"

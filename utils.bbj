@@ -8,9 +8,11 @@ class public Login
 
 	field public BBjString cuenta!
 	field public BBjString email!
+	field public BBjString hashed!
 	field public BBjString token!
 	field public BBjInt confirmado!
 	field public BBjInt uid!
+	
 
 	use ::jwt.bbj::Jwt
 
@@ -19,7 +21,7 @@ class public Login
 		while 1
 			SQLChan = SQLunt
 			SQLOpen(SQLChan)"NcusDB"
-			SQLPrep(SQLChan)"select uid, cuenta, token, confirmado from login where email=?"
+			SQLPrep(SQLChan)"select uid, cuenta, token, confirmado,password from login where email=?"
 			SQLExec(SQLChan,err=*break)email!
 			dim login$:SQLTMPL(SQLChan)
 			login$=SQLFetch(SQLChan,err=*break)
@@ -27,6 +29,7 @@ class public Login
 			#token!=login.token$
 			#confirmado!=login.confirmado
 			#uid!=login.uid
+			#hashed!=CVS(login.password$,3)
 			break
 		wend
 	methodend
@@ -45,12 +48,15 @@ class public Login
 
 	method public Boolean crear(BBjString cuenta!, BBjString email!, BBjString password!)
 
+		use org.mindrot.jbcrypt.BCrypt
 		params! = new java.util.HashMap()
 		params!.put("email", email!)
 		params!.put("confirmado","")
 		jwt! = Jwt.sign(params!,0)
+		hashed! = BCrypt.hashpw(password!, BCrypt.gensalt())
+
 		while 1
-			sql$="insert into login (uid, cuenta, email, password, token) values (login_uid.nextval, '"+cuenta!+"','"+email!+"','"+password!+"','"+jwt!+"')"
+			sql$="insert into login (uid, cuenta, email, password, token) values (login_uid.nextval, '"+cuenta!+"','"+email!+"','"+hashed!+"','"+jwt!+"')"
 			java.lang.System.out.println(sql$)
 			SQLChan = SQLunt
 			SQLOpen(SQLChan)"NcusDB"
@@ -88,8 +94,11 @@ class public Login
 	methodend
 
 	method public Boolean cambiopassword(BBjString password!)
+		use org.mindrot.jbcrypt.BCrypt
+		hashed! = BCrypt.hashpw(password!, BCrypt.gensalt())
+
 		while 1
-			sql$="update login set password='"+password!+"' where email=?"
+			sql$="update login set password='"+hashed!+"' where email=?"
 			SQLChan = SQLunt
 			SQLOpen(SQLChan)"NcusDB"
 			SQLPrep(SQLChan)sql$
@@ -103,7 +112,13 @@ class public Login
 	methodend
 
 	method public Boolean passwordValido(BBjString password!)
-		methodret Boolean.FALSE
+		use org.mindrot.jbcrypt.BCrypt
+
+		if BCrypt.checkpw(password!, #hashed!) then
+			methodret Boolean.TRUE
+		else
+			methodret Boolean.FALSE
+		endif
 	methodend
 
 classend
