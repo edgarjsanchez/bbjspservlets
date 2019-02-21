@@ -26,7 +26,7 @@ class public Confirmacion
 		java.lang.System.out.println(pgm(1)+" Email: "+email$)
 
 		if email$="" then 
-			java.lang.System.out.println(pgm(1)+"No se encontro Email.")
+			java.lang.System.err.println(pgm(1)+"No se encontro Email.")
 			response!.getOutputStream().write(res$)
 			response!.setStatus(status)
 			goto salida
@@ -34,8 +34,8 @@ class public Confirmacion
 
 		login! = new Login(email$)
 
-		if !login!.existe() then 
-			java.lang.System.out.println(pgm(1)+"No se encontro Login.")
+		if !login!.getexiste() then 
+			java.lang.System.err.println(pgm(1)+"No se encontro Login.")
 			response!.getOutputStream().write(res$)
 			response!.setStatus(status)
 			goto salida

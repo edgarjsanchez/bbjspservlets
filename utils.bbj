@@ -12,24 +12,29 @@ class public Login
 	field public BBjString token!
 	field public BBjInt confirmado!
 	field public BBjInt uid!
+	field public BBjInt existe!
+	field public BBjInt intentos!
 
 	use ::jwt.bbj::Jwt
 	use org.mindrot.jbcrypt.BCrypt
 
 	method public Login(BBjString email!)
 		#email!=email!
+		#existe!=0
 		while 1
 			SQLChan = SQLunt
 			SQLOpen(SQLChan)"NcusDB"
-			SQLPrep(SQLChan)"select uid, cuenta, token, confirmado,password from login where email=?"
+			SQLPrep(SQLChan)"select uid, cuenta, token, confirmado,password, intentos from login where email=?"
 			SQLExec(SQLChan,err=*break)email!
 			dim login$:SQLTMPL(SQLChan)
 			login$=SQLFetch(SQLChan,err=*break)
+			#uid!=login.uid
 			#cuenta!=login.cuenta$
 			#token!=login.token$
 			#confirmado!=login.confirmado
-			#uid!=login.uid
+			#intentos!=login.intentos
 			#hashed!=CVS(login.password$,3)
+			#existe!=1
 			break
 		wend
 		SQLClose(SQLChan)
@@ -51,18 +56,6 @@ class public Login
 		endif
 	methodend
 
-	method public Boolean existe()
-		sql$="select uid from login where email='"+#email!+"'"
-		rs! = BBJAPI().createSQLRecordSet("NcusDB",modes$,sql$,BBjAPI.FALSE)
-		existe=rs!.getRecordCount()
-		rs!.close()
-		if existe then
-			methodret Boolean.TRUE
-		else
-			methodret Boolean.FALSE
-		endif
-	methodend
-
 	method public Boolean crear(BBjString cuenta!, BBjString email!, BBjString password!)
 		params! = new java.util.HashMap()
 		params!.put("email", email!)
@@ -76,13 +69,13 @@ class public Login
 			SQLOpen(SQLChan)"NcusDB"
 			SQLPrep(SQLChan)sql$
 			SQLExec(SQLChan,err=*break)
-			SQLClose(SQLChan)			
+			SQLClose(SQLChan)
 			#cuenta!=cuenta!
 			#email!=email!
 			#token!=CAST(BBjString,jwt!)
 			methodret Boolean.TRUE
 		wend
-		SQLClose(SQLChan)			
+		SQLClose(SQLChan)
 		methodret Boolean.FALSE
 	methodend
 
@@ -146,38 +139,26 @@ classend
 class public Socio
 
 	field public BBjString cuenta!
+	field public BBjString ssn!
+	field public BBjString email!
+	field public BBjInt existe!
 
 	method public Socio(BBjString cuenta!)
 		#cuenta!=cuenta!
+		#existe!=0
 		while 1
 			SQLChan = SQLunt
 			SQLOpen(SQLChan)"NcusDB"
-			SQLPrep(SQLChan)"select * from SOCIOS where cuenta=?"
+			SQLPrep(SQLChan)"select ssn, email from SOCIOS where cuenta=? and swcerrada=0 and swfallecido=0"
 			SQLExec(SQLChan,err=*break)cuenta!
 			dim socios$:SQLTMPL(SQLChan)
 			socios$=SQLFetch(SQLChan,err=*break)
+			#ssn!=socios.ssn$
+			#email!=socios.email$
+			#existe!=1
 			break
 		wend
 		SQLClose(SQLChan)
 	methodend
-
-	method public Boolean existe()
-
-		REM En esta seccion hay que validar que para la cuenta enviada exista una entrada en SOCIOS.
-		REM Se debe validar tambien el Seg Social
-		REM En adicion se podria validar si existe el mismo email en las tablas de NCUS.
-		REM Por el momento solo validamos que exista cualquier numero de cuenta.
-		
-		sql$="select * from SOCIOS where cuenta='"+#cuenta!+"'"
-		rs! = BBJAPI().createSQLRecordSet("NcusDB",modes$,sql$,BBjAPI.FALSE)
-		existe=rs!.getRecordCount()
-		rs!.close()
-
-		if existe then 
-			methodret Boolean.TRUE
-		else
-			methodret Boolean.FALSE
-		endif
-	methodend
-
+	
 classend

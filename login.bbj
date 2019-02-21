@@ -28,7 +28,7 @@ class public Login
 
 		login! = new Login(user!)
 
-		if login!.existe() and login!.getconfirmado() then
+		if login!.getexiste() and login!.getconfirmado() then
 			if login!.bloqueado() then
 				status=400
 				e$="{""errors"": { ""global"": ""Por razones de seguridad su cuenta fue bloqueada. Contacte a su cooperativa.""} }"
@@ -38,12 +38,16 @@ class public Login
 					e$="{""user"":{""email"":"""+ user! +""", ""confirmed"":""true"",""token"":"""+login!.gettoken()+"""}}"
 				else
 					status=400
-					e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
+					if login!.getintentos()=3 then 
+						e$="{""errors"": { ""global"": ""Credenciales Invalidas. Si falla un intento mas su cuenta sera bloqueda.""} }"
+					else
+						e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
+					endif
 				endif
 			endif 
 		else
 			status=400
-			e$="{""errors"": { ""global"": ""No se encontro usuario en el sistema.""} }"
+			e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
 		endif
 
 		java.lang.System.out.println("Message returned "+e$)

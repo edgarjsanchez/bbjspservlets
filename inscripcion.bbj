@@ -34,29 +34,50 @@ class public Inscripcion
 
 		java.lang.System.out.println("Pedido de inscripcion usando cuenta "+cuenta!)
 
+		REM Verifica si existe  un login con ese email.
 		login! = new Login(email!)
-		if login!.existe() then
-			response!.getOutputStream().write("{""errors"": { ""global"": ""Email Invalido.""} }")
-			response!.setStatus(400)
-			java.lang.System.out.println("Message returned: Email invalido")
+		if login!.getexiste() then
+			response!.getOutputStream().write(e$)
+			response!.setStatus(status)
+			java.lang.System.err.println("Error en inscripcion: Email ya existen en LOGIN")
 			goto salida
 		endif
 
+		REM Verifica si existe una cuenta valida.
 		socio! = new Socio(cuenta!)
-		if !socio!.existe() then 
-			response!.getOutputStream().write("{""errors"": { ""global"": ""Numero de Cuenta Invalido.""} }")
-			response!.setStatus(400)
-			java.lang.System.out.println("Message returned: Numero cuenta invalido")
+		if !socio!.getexiste() then 
+			response!.getOutputStream().write(e$)
+			response!.setStatus(status)
+			java.lang.System.err.println("Error en inscripcion: Numero de cuenta no existe")
+			goto salida
+		endif
+
+		REM Verifica si el SS es valido.
+		ssn$=socio!.getssn()
+		if ssn$(6,4)<>segsoc! then 
+			response!.getOutputStream().write(e$)
+			response!.setStatus(status)
+			java.lang.System.err.println("Error en inscripcion: Numero de segsoc incorrecto")
+			goto salida
+		endif
+
+		REM Verifica si el email es valido.
+		email$=socio!.getemail()
+		if email$<>email! then 
+			response!.getOutputStream().write(e$)
+			response!.setStatus(status)
+			java.lang.System.err.println("Error en inscripcion: Numero de segsoc incorrecto")
 			goto salida
 		endif
 
 		REM Crear entrada en tabla Login
 		if login!.crear(cuenta!, email!, password!) then
 			if Email.enviarEmailInscripcion(login!.getemail(), login!.gettoken()) then 
+				java.lang.System.out.println("Email para confirmar inscripcion enviado. Entrada en login creada.")
 				response!.setStatus(200)
 				goto salida
 			else 
-				java.lang.System.out.println("Envio de email fallo. Se considera que la transaccion no es valida para cuenta: "+cuenta$)
+				java.lang.System.err.println("Envio de email fallo. Se considera que la transaccion no es valida para cuenta: "+cuenta$)
 				rem Aqui poner logica para manejar este caso
 			endif
 		endif
@@ -69,16 +90,3 @@ class public Inscripcion
 
 classend
 
-
-REM CREATE SEQUENCE login_uid INCREMENT BY 1 START WITH 100
-REM create table LOGIN
-REM (
-REM uid int not null primary key unique,
-REM EMAIL char(64),
-REM PASSWORD char(128),
-REM TOKEN char(256),
-REM CONFIRMADO int,
-REM KEY(CUENTA),
-REM KEY(EMAIL),
-REM KEY(TOKEN)
-REM ) VKEYED
