@@ -1,7 +1,7 @@
 class public Login
 
 	method public void service(BBjspServletContext context!)
-	
+
 		use ::utils.bbj::Login
 
 		declare BBjspWebRequest request!
@@ -13,7 +13,7 @@ class public Login
 		response!.setContentType("application/json")
 
 		body!=request!.getBody()
-		
+
 		if body! = null() then 
 			java.lang.System.err.println("No body found in request. ")
 			response!.getOutputStream().write("{""errors"": { ""global"": ""Informacion Invalida.""} }")
@@ -27,20 +27,25 @@ class public Login
 		java.lang.System.out.println("Login request using "+user!)
 
 		login! = new Login(user!)
-		
+
 		if login!.existe() and login!.getconfirmado() then
-			if login!.passwordValido(pwd!) then
-				status=200
-				e$="{""user"":{""email"":"""+ user! +""", ""confirmed"":""true"",""token"":"""+login!.gettoken()+"""}}"
-			else
+			if login!.bloqueado() then
 				status=400
-				e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
-			endif
+				e$="{""errors"": { ""global"": ""Por razones de seguridad su cuenta fue bloqueada. Contacte a su cooperativa.""} }"
+			else
+				if login!.passwordValido(pwd!) then
+					status=200
+					e$="{""user"":{""email"":"""+ user! +""", ""confirmed"":""true"",""token"":"""+login!.gettoken()+"""}}"
+				else
+					status=400
+					e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
+				endif
+			endif 
 		else
 			status=400
 			e$="{""errors"": { ""global"": ""No se encontro usuario en el sistema.""} }"
 		endif
-		
+
 		java.lang.System.out.println("Message returned "+e$)
 		response!.getOutputStream().write(e$)
 		response!.setStatus(status)

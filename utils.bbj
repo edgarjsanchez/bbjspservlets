@@ -12,9 +12,9 @@ class public Login
 	field public BBjString token!
 	field public BBjInt confirmado!
 	field public BBjInt uid!
-	
 
 	use ::jwt.bbj::Jwt
+	use org.mindrot.jbcrypt.BCrypt
 
 	method public Login(BBjString email!)
 		#email!=email!
@@ -32,6 +32,23 @@ class public Login
 			#hashed!=CVS(login.password$,3)
 			break
 		wend
+		SQLClose(SQLChan)
+	methodend
+
+	method public Boolean bloqueado()
+		SQLChan = SQLunt
+		SQLOpen(SQLChan)"NcusDB"
+		SQLPrep(SQLChan)"select intentos from login where uid=?"
+		SQLExec(SQLChan,err=*break)#uid!
+		dim login$:SQLTMPL(SQLChan)
+		login$=SQLFetch(SQLChan,err=*break)
+		intentos=login.intentos
+		SQLClose(SQLChan)
+		if intentos>3 then 
+			methodret Boolean.TRUE 
+		else
+			methodret Boolean.FALSE
+		endif
 	methodend
 
 	method public Boolean existe()
@@ -47,14 +64,11 @@ class public Login
 	methodend
 
 	method public Boolean crear(BBjString cuenta!, BBjString email!, BBjString password!)
-
-		use org.mindrot.jbcrypt.BCrypt
 		params! = new java.util.HashMap()
 		params!.put("email", email!)
 		params!.put("confirmado","")
 		jwt! = Jwt.sign(params!,0)
 		hashed! = BCrypt.hashpw(password!, BCrypt.gensalt())
-
 		while 1
 			sql$="insert into login (uid, cuenta, email, password, token) values (login_uid.nextval, '"+cuenta!+"','"+email!+"','"+hashed!+"','"+jwt!+"')"
 			java.lang.System.out.println(sql$)
@@ -70,11 +84,9 @@ class public Login
 		wend
 		SQLClose(SQLChan)			
 		methodret Boolean.FALSE
-
 	methodend
-	
+
 	method public Boolean confirmar()
-	
 		params! = new java.util.HashMap()
 		params!.put("email", #email!)
 		params!.put("confirmado","true")
@@ -94,9 +106,7 @@ class public Login
 	methodend
 
 	method public Boolean cambiopassword(BBjString password!)
-		use org.mindrot.jbcrypt.BCrypt
 		hashed! = BCrypt.hashpw(password!, BCrypt.gensalt())
-
 		while 1
 			sql$="update login set password='"+hashed!+"' where email=?"
 			SQLChan = SQLunt
@@ -112,11 +122,21 @@ class public Login
 	methodend
 
 	method public Boolean passwordValido(BBjString password!)
-		use org.mindrot.jbcrypt.BCrypt
-
 		if BCrypt.checkpw(password!, #hashed!) then
+			sql$="update login set intentos=0, lastlogin='"+date(0:"%Yl-%Mz-%Dz")+"' where uid=?"
+			SQLChan = SQLunt
+			SQLOpen(SQLChan)"NcusDB"
+			SQLPrep(SQLChan)sql$
+			SQLExec(SQLChan,err=*break)#uid!
+			SQLClose(SQLChan)
 			methodret Boolean.TRUE
 		else
+			sql$="update login set intentos=intentos+1, lastlogin='"+date(0:"%Yl-%Mz-%Dz")+"' where uid=?"
+			SQLChan = SQLunt
+			SQLOpen(SQLChan)"NcusDB"
+			SQLPrep(SQLChan)sql$
+			SQLExec(SQLChan,err=*break)#uid!
+			SQLClose(SQLChan)
 			methodret Boolean.FALSE
 		endif
 	methodend
@@ -138,6 +158,7 @@ class public Socio
 			socios$=SQLFetch(SQLChan,err=*break)
 			break
 		wend
+		SQLClose(SQLChan)
 	methodend
 
 	method public Boolean existe()
