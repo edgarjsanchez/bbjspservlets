@@ -3,6 +3,7 @@ class public Login
 	method public void service(BBjspServletContext context!)
 
 		use ::utils.bbj::Login
+		use ::jwt.bbj::Jwt
 
 		declare BBjspWebRequest request!
 		declare BBjspWebResponse response!
@@ -12,12 +13,36 @@ class public Login
 		response! = context!.getResponse()
 		response!.setContentType("application/json")
 
-		body!=request!.getBody()
+		REM Verificar que el pedido venga de programacion autorizada (Compania dentro de token)
+		auth! = request!.getHeader("Authorization",err=*next)
+		if auth! <> null() then
+			auth$=auth!
+			jwt$ = auth$(POS(" "=auth$)+1)
+			java.lang.System.out.println("Auth: "+jwt$)
+		else
+			java.lang.System.err.println("Auth: NULO")
+			rem 403 - Forbidden - Authentication failure or invalid Application ID.
+			e$="{""errors"": { ""global"": ""No Autorizado.""} }"
+			status=403
+			goto salida
+		endif
 
+		claims! = Jwt.verify(jwt$)
+		compania$=claims!.get("compania",err=*next)
+		if compania$<>"MySoftwareOV" then
+			rem 403 - Forbidden - Authentication failure or invalid Application ID.
+			e$="{""errors"": { ""global"": ""No Autorizado.""} }"
+			status=403
+			goto salida
+		endif
+		
+		body!=request!.getBody()
 		if body! = null() then 
 			java.lang.System.err.println("No body found in request. ")
-			response!.getOutputStream().write("{""errors"": { ""global"": ""Informacion Invalida.""} }")
-			response!.setStatus(400)
+			rem 400 - Bad request - Malformed syntax or a bad query.
+			e$="{""errors"": { ""global"": ""Informacion Invalida.""} }"
+			status=400
+			goto salida
 		endif
 
 		java.lang.System.out.println("Body: "+body!)
@@ -50,6 +75,7 @@ class public Login
 			e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
 		endif
 
+		salida:
 		java.lang.System.out.println("Message returned "+e$)
 		response!.getOutputStream().write(e$)
 		response!.setStatus(status)

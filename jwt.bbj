@@ -57,6 +57,7 @@ class public Jwt
 		methodret claims!
 
 		errorhandler:
+		java.lang.System.err.println("Error " + errmes(-1))
 		#error! = "Error " + errmes(-1)
 		methodret null()
 
@@ -65,11 +66,8 @@ class public Jwt
 classend
 
 		params! = new java.util.HashMap()
-		params!.put("email", "edgar@me.com")
-		params!.put("confirmado","true")
-		ESCAPE
-		rem Exp en una hora
-		jwt! = Jwt.sign(params!,360000)
+		params!.put("compania", "MySoftwareOV")
+		jwt! = Jwt.sign(params!,0)
 		ESCAPE
 		c! = Jwt.verify(jwt!)
 		ESCAPE

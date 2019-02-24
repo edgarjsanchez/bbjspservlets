@@ -49,7 +49,7 @@ class public Login
 		login$=SQLFetch(SQLChan,err=*break)
 		intentos=login.intentos
 		SQLClose(SQLChan)
-		if intentos>3 then 
+		if intentos>4 then 
 			methodret Boolean.TRUE 
 		else
 			methodret Boolean.FALSE

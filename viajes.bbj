@@ -6,27 +6,26 @@ class public Viajes
   field public static BBjNumber status!
   field public static BBjNumber debug!
 
-    method public void service(BBjspServletContext context!)
-	
-        declare BBjspWebRequest request!
-        declare BBjspWebResponse response!
-        declare BBjspSessionData data!
-		
+	method public void service(BBjspServletContext context!)
+
+		declare BBjspWebRequest request!
+		declare BBjspWebResponse response!
+		declare BBjspSessionData data!
+
 		use ::jwt.bbj::Jwt
 		use org.json.JSONObject
 		use org.json.JSONArray
 
 		#debug! = 0
-        #debug! = NUM(STBL("debugmode",err=*next),err=*next)
+		#debug! = NUM(STBL("debugmode",err=*next),err=*next)
 
-        request! = context!.getRequest()
+		request! = context!.getRequest()
 		method! = request!.getMethod()
 		path! = request!.getPathInfo()
 		uri! = request!.getRequestURI()
 		url! = request!.getRequestURL()
-		
+
 		if #debug! then 
-		
 			java.lang.System.out.println("Metodo: "+method!,err=*next)
 			java.lang.System.out.println("Path: "+path!,err=*next)
 			java.lang.System.out.println("URI: "+uri!,err=*next)
@@ -34,21 +33,20 @@ class public Viajes
 
 			x!=request!.getHeaderNames()
 			java.lang.System.out.println("Headers")
-			
+
 			for i=0 to x!.size()-1
 				java.lang.System.out.println(x!.getItem(i))
 				java.lang.System.out.println(request!.getHeader(x!.getItem(i)))
 				java.lang.System.out.println("---------------------------------------------")
 			next i
-			
 		endif
 
-        response! = context!.getResponse()
-	    response!.setContentType("application/json")
-        data! = context!.getBBjspSession()
+		response! = context!.getResponse()
+		response!.setContentType("application/json")
+		data! = context!.getBBjspSession()
 
 		rem VALIDATIONS
-		
+
 		rem Check header exists, if not, exit
 		auth!=""
 		auth! = request!.getHeader("Authorization",err=*next)
@@ -59,7 +57,7 @@ class public Viajes
 			#status!=401
 			goto response
 		endif
-		
+
 		rem Check header includes valid JWT, if not, exit
 		auth$=auth!
 		jwt$ = auth$(POS(" "=auth$)+1)
@@ -106,15 +104,15 @@ class public Viajes
 				#crearViaje()
 				break
 			case "DELETE"
-			rem Jetty seem to ignore a entity body if it is present. We use the uri to include the key
+			rem Jetty seem to ignore entity body if it is present. We use the uri to include the key
 				#borrarViaje(path!)
 				break
 		Swend
-		
+
 		response:
 		if #debug! then java.lang.System.out.println("Message returned "+#res!+" Code: "+STR(#status!))
-        response!.getOutputStream().write(#res!)
-        response!.setStatus(#status!)
+		response!.getOutputStream().write(#res!)
+		response!.setStatus(#status!)
 
 	methodend
 

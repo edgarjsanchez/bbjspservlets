@@ -19,7 +19,7 @@ class public Confirmacion
 
 		token! = path!.replace("/","")
 		java.lang.System.out.println("Confirmacion token recibido: "+token!)
-		
+
 		REM Verificar token para sacar detalles del cliente
 		claims! = Jwt.verify(token!)
 		email$=claims!.get("email",err=*next)

@@ -21,13 +21,15 @@ class public Inscripcion
 
 		if body! = null() then 
 			java.lang.System.err.println("No body found in request. ")
-			response!.getOutputStream().write("{""errors"": { ""global"": ""Informacion Invalida.""} }")
-			response!.setStatus(400)
+			response!.getOutputStream().write(e$)
+			response!.setStatus(status)
+			goto salida
 		endif
 
 		java.lang.System.out.println("Body: "+body!)
 		jsonO!= new org.json.JSONObject(body!)
 		cuenta!=jsonO!.get("credentials").get("cuenta").toString(err=*next)
+		cuenta!= STR(NUM(cuenta!):"000000000")
 		email!=jsonO!.get("credentials").get("email").toString(err=*next)
 		segsoc!=jsonO!.get("credentials").get("segsoc").toString(err=*next)
 		password!=jsonO!.get("credentials").get("password").toString(err=*next)
