@@ -44,9 +44,9 @@ class public Login
 		SQLChan = SQLunt
 		SQLOpen(SQLChan)"NcusDB"
 		SQLPrep(SQLChan)"select intentos from login where uid=?"
-		SQLExec(SQLChan,err=*break)#uid!
+		SQLExec(SQLChan)#uid!
 		dim login$:SQLTMPL(SQLChan)
-		login$=SQLFetch(SQLChan,err=*break)
+		login$=SQLFetch(SQLChan)
 		intentos=login.intentos
 		SQLClose(SQLChan)
 		if intentos>4 then 

@@ -14,7 +14,7 @@ class public Confirmacion
 		path! = request!.getPathInfo()
 
 		Rem Default es que no hay data valida
-		res$="<html><h2>No se pudo confirmar su informacion. Contacte a su cooperativa.</h2></html>"
+		e$="<html><h2>No se pudo confirmar su informacion. Contacte a su cooperativa.</h2></html>"
 		status=400
 
 		token! = path!.replace("/","")
@@ -26,30 +26,26 @@ class public Confirmacion
 		java.lang.System.out.println(pgm(1)+" Email: "+email$)
 
 		if email$="" then 
-			java.lang.System.err.println(pgm(1)+"No se encontro Email.")
-			response!.getOutputStream().write(res$)
-			response!.setStatus(status)
+			java.lang.System.err.println(pgm(1)+" No se encontro Email.")
 			goto salida
 		endif
 
 		login! = new Login(email$)
 
 		if !login!.getexiste() then 
-			java.lang.System.err.println(pgm(1)+"No se encontro Login.")
-			response!.getOutputStream().write(res$)
-			response!.setStatus(status)
+			java.lang.System.err.println(pgm(1)+" No se encontro Login.")
 			goto salida
 		endif
 
 		if login!.confirmar() then		
 			status = 200
-			res$="<html><h2>Confirmacion Exitosa. Intente hacer login en su app.</h2></html>"
+			e$="<html><h2>Confirmacion Exitosa. Intente hacer login en su app.</h2></html>"
 		endif
 
-		response!.getOutputStream().write(res$)
+		salida:
+		response!.getOutputStream().write(e$)
 		response!.setStatus(status)
 
-	salida:
 	methodend
 
 classend

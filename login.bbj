@@ -76,7 +76,7 @@ class public Login
 		endif
 
 		salida:
-		java.lang.System.out.println("Message returned "+e$)
+		java.lang.System.out.println(STR(status)+" Message returned "+e$)
 		response!.getOutputStream().write(e$)
 		response!.setStatus(status)
 

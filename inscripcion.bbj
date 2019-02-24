@@ -21,8 +21,6 @@ class public Inscripcion
 
 		if body! = null() then 
 			java.lang.System.err.println("No body found in request. ")
-			response!.getOutputStream().write(e$)
-			response!.setStatus(status)
 			goto salida
 		endif
 
@@ -39,8 +37,6 @@ class public Inscripcion
 		REM Verifica si existe  un login con ese email.
 		login! = new Login(email!)
 		if login!.getexiste() then
-			response!.getOutputStream().write(e$)
-			response!.setStatus(status)
 			java.lang.System.err.println("Error en inscripcion: Email ya existen en LOGIN")
 			goto salida
 		endif
@@ -48,8 +44,6 @@ class public Inscripcion
 		REM Verifica si existe una cuenta valida.
 		socio! = new Socio(cuenta!)
 		if !socio!.getexiste() then 
-			response!.getOutputStream().write(e$)
-			response!.setStatus(status)
 			java.lang.System.err.println("Error en inscripcion: Numero de cuenta no existe")
 			goto salida
 		endif
@@ -57,8 +51,6 @@ class public Inscripcion
 		REM Verifica si el SS es valido.
 		ssn$=socio!.getssn()
 		if ssn$(6,4)<>segsoc! then 
-			response!.getOutputStream().write(e$)
-			response!.setStatus(status)
 			java.lang.System.err.println("Error en inscripcion: Numero de segsoc incorrecto")
 			goto salida
 		endif
@@ -66,9 +58,7 @@ class public Inscripcion
 		REM Verifica si el email es valido.
 		email$=socio!.getemail()
 		if email$<>email! then 
-			response!.getOutputStream().write(e$)
-			response!.setStatus(status)
-			java.lang.System.err.println("Error en inscripcion: Numero de segsoc incorrecto")
+			java.lang.System.err.println("Error en inscripcion: Email incorrecto")
 			goto salida
 		endif
 
@@ -76,18 +66,17 @@ class public Inscripcion
 		if login!.crear(cuenta!, email!, password!) then
 			if Email.enviarEmailInscripcion(login!.getemail(), login!.gettoken()) then 
 				java.lang.System.out.println("Email para confirmar inscripcion enviado. Entrada en login creada.")
-				response!.setStatus(200)
-				goto salida
+				status=204
 			else 
 				java.lang.System.err.println("Envio de email fallo. Se considera que la transaccion no es valida para cuenta: "+cuenta$)
 				rem Aqui poner logica para manejar este caso
 			endif
 		endif
 
-		response!.getOutputStream().write(e$)
+		salida:
+		if status<>204 then response!.getOutputStream().write(e$)
 		response!.setStatus(status)
 
-	salida:
 	methodend
 
 classend
