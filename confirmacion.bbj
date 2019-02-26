@@ -1,13 +1,14 @@
 class public Confirmacion
 
 	method public void service(BBjspServletContext context!)
-	
-		declare BBjspWebRequest request!
-		declare BBjspWebResponse response!
-		
+			
 		use java.util.HashMap
 		use ::jwt.bbj::Jwt
 		use ::utils.bbj::Login
+
+        declare BBjspWebRequest request!
+        declare BBjspWebResponse response!
+        declare Login login!
 
 		request! = context!.getRequest()
 		response! = context!.getResponse()

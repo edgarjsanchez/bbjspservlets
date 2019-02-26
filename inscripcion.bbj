@@ -2,12 +2,13 @@ class public Inscripcion
 
 	method public void service(BBjspServletContext context!)
 	
-		declare BBjspWebRequest request!
-		declare BBjspWebResponse response!
-
 		use ::utils.bbj::Login
 		use ::utils.bbj::Socio
 		use ::emailutil.bbj::Email
+
+        declare BBjspWebRequest request!
+        declare BBjspWebResponse response!
+        declare Login login!
 
 		request! = context!.getRequest()
 		response! = context!.getResponse()

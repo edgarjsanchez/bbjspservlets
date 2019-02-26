@@ -92,7 +92,6 @@ class public Login
 			SQLExec(SQLChan,err=*break)#email!
 			SQLClose(SQLChan)
 			methodret Boolean.TRUE
-			break
 		wend
 		SQLClose(SQLChan)
 		methodret Boolean.FALSE
@@ -108,7 +107,6 @@ class public Login
 			SQLExec(SQLChan,err=*break)#email!
 			SQLClose(SQLChan)
 			methodret Boolean.TRUE
-			break
 		wend
 		SQLClose(SQLChan)
 		methodret Boolean.FALSE

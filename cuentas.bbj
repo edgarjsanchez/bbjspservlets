@@ -2,10 +2,11 @@ class public Cuentas
 
     method public void service(BBjspServletContext context!)
 	
+        use ::jwt.bbj::Jwt
+
         declare BBjspWebRequest request!
         declare BBjspWebResponse response!
         declare BBjspSessionData data!
-		use ::jwt.bbj::Jwt
 	
         debug = NUM(STBL("debugmode",err=*next),err=*next)
 

@@ -13,6 +13,10 @@ class public Login
 		response! = context!.getResponse()
 		response!.setContentType("application/json")
 
+        Rem Default es que no hay data valida
+        e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
+        status=400
+
 		REM Verificar que el pedido venga de programacion autorizada (Compania dentro de token)
 		auth! = request!.getHeader("Authorization",err=*next)
 		if auth! <> null() then
@@ -70,9 +74,6 @@ class public Login
 					endif
 				endif
 			endif 
-		else
-			status=400
-			e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
 		endif
 
 		salida:
