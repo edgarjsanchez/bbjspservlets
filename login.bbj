@@ -1,5 +1,7 @@
 class public Login
 
+	field public static BBjNumber debug!
+	
 	method public void service(BBjspServletContext context!)
 
 		use ::utils.bbj::Login
@@ -13,9 +15,35 @@ class public Login
 		response! = context!.getResponse()
 		response!.setContentType("application/json")
 
-        Rem Default es que no hay data valida
-        e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
-        status=400
+		Rem Default es que no hay data valida
+		e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
+		status=400
+		
+		#debug! = NUM(STBL("debugmode",err=*next),err=*next)
+
+		java.lang.System.out.println("Login request from "+request!.getRemoteAddr())
+
+		if #debug! then 
+			request! = context!.getRequest()
+			method! = request!.getMethod()
+			path! = request!.getPathInfo()
+			uri! = request!.getRequestURI()
+			url! = request!.getRequestURL()
+
+			java.lang.System.out.println("Metodo: "+method!,err=*next)
+			java.lang.System.out.println("Path: "+path!,err=*next)
+			java.lang.System.out.println("URI: "+uri!,err=*next)
+			java.lang.System.out.println("URL: "+url!,err=*next)
+
+			x!=request!.getHeaderNames()
+			java.lang.System.out.println("Headers")
+
+			for i=0 to x!.size()-1
+				java.lang.System.out.println(x!.getItem(i))
+				java.lang.System.out.println(request!.getHeader(x!.getItem(i)))
+				java.lang.System.out.println("---------------------------------------------")
+			next i
+		endif
 
 		REM Verificar que el pedido venga de programacion autorizada (Compania dentro de token)
 		auth! = request!.getHeader("Authorization",err=*next)
@@ -53,7 +81,7 @@ class public Login
 		jsonO!= new org.json.JSONObject(body!)
 		user!=jsonO!.get("credentials").get("user").toString(err=*next)
 		pwd!=jsonO!.get("credentials").get("password").toString(err=*next)
-		java.lang.System.out.println("Login request using "+user!)
+		java.lang.System.out.println("Login User: "+user!)
 
 		login! = new Login(user!)
 
@@ -61,10 +89,13 @@ class public Login
 			if login!.bloqueado() then
 				status=400
 				e$="{""errors"": { ""global"": ""Por razones de seguridad su cuenta fue bloqueada. Contacte a su cooperativa.""} }"
+				if #debug! then java.lang.System.err.println("Cuenta Bloqueda")
+
 			else
 				if login!.passwordValido(pwd!) then
 					status=200
 					e$="{""user"":{""email"":"""+ user! +""", ""confirmed"":""true"",""token"":"""+login!.gettoken()+"""}}"
+					if #debug! then java.lang.System.err.println("Password invalido")
 				else
 					status=400
 					if login!.getintentos()=3 then 
@@ -72,12 +103,13 @@ class public Login
 					else
 						e$="{""errors"": { ""global"": ""Credenciales Invalidas.""} }"
 					endif
+					if #debug! then java.lang.System.err.println("Email no existe o no ha sido confirmado.")
 				endif
 			endif 
 		endif
 
 		salida:
-		java.lang.System.out.println(STR(status)+" Message returned "+e$)
+		java.lang.System.out.println("Code returned:"+STR(status)+" Message returned: "+e$)
 		response!.getOutputStream().write(e$)
 		response!.setStatus(status)
 

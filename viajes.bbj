@@ -1,10 +1,10 @@
 class public Viajes
 
-  field public static BBjString cliente!
-  field public static BBjString viaje!
-  field public static BBjString res!
-  field public static BBjNumber status!
-  field public static BBjNumber debug!
+	field public static BBjString cliente!
+	field public static BBjString viaje!
+	field public static BBjString res!
+	field public static BBjNumber status!
+	field public static BBjNumber debug!
 
 	method public void service(BBjspServletContext context!)
 
@@ -142,8 +142,13 @@ class public Viajes
 		
 		errorhandler:
 		rem 500 - Internal server error.
-		#res!="{""errors"": { ""global"": ""No se pudo actualizar.""} }"
+		err$=SQLErr(SQLChan,err=*next)
+		SQLClose(SQLChan,err=*next)
+
+		#res!="{""errors"": { ""global"": ""No se pudo crear.""} }"
 		#status!=500
+		
+		if #debug! then java.lang.System.err.println("Viaje "+idviaje!+" NO creado. Error "+err$)
 	
 	fin:
 	methodend
@@ -173,15 +178,20 @@ class public Viajes
 		
 		errorhandler:
 		rem 500 - Internal server error.
+		err$=SQLErr(SQLChan,err=*next)
+		SQLClose(SQLChan,err=*next)
+
 		#res!="{""errors"": { ""global"": ""No se pudo actualizar.""} }"
 		#status!=500
-	
+
+		if #debug! then java.lang.System.err.println("Viaje "+idviaje!+" NO actualizado. Error "+err$)
+
 	fin:
 	methodend
 	
 	method public static void buscarViajes()
 	
-		if #debug! then java.lang.System.out.println("Viajes pedidos usando "+#cliente!)
+		if #debug! then java.lang.System.out.println("Viajes pedidos - Cliente "+#cliente!)
 
 		jsonRS!=new JSONObject()
 		rsrows!=new JSONArray()
@@ -237,12 +247,18 @@ class public Viajes
 		rem The request was processed successfully, but no response body is needed.
 		#res!=" "
 		#status!=204
+		if #debug! then java.lang.System.out.println("Viaje borrado:"+idviaje!)
 		goto fin
 		
 		errorhandler:
 		rem 500 - Internal server error.
+		err$=SQLErr(SQLChan,err=*next)
+		SQLClose(SQLChan,err=*next)
+
 		#res!="{""errors"": { ""global"": ""No se pudo remover.""} }"
 		#status!=500
+		
+		if #debug! then java.lang.System.err.println("Viaje "+idviaje!+" NO borrado. Error "+err$)
 	
 	fin:
 	methodend	
